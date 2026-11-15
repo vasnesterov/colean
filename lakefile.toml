@@ -1,7 +1,9 @@
 name = "Colean"
 version = "0.1.0"
 license = "Apache-2.0"
-defaultTargets = ["Colean", "ColeanTest"]
+defaultTargets = ["Colean"]
+# The tests: `lake test` (and CI) builds them, a bare `lake build` does not.
+testDriver = "ColeanTest"
 # The files are not modules (no `module` header), while Mathlib is designed for the module system.
 allowNonModules = true
 

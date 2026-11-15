@@ -19,7 +19,7 @@ Add to your `lakefile.toml`:
 ```toml
 [[require]]
 name = "Colean"
-git = "https://github.com/vasnesterov/colean"
+git = "https://github.com/verse-lab/colean"
 rev = "main"
 ```
 
@@ -252,7 +252,7 @@ Colean does not handle every declaration you can write: it supports most of the 
 useful in practice, and it may reject some it could in principle accept. When it cannot build
 a type or prove its contract, the command fails with an error and declares nothing. It never
 produces a type that does not satisfy its contract. Bug reports and feature requests are welcome
-in the [issues](https://github.com/vasnesterov/colean/issues).
+in the [issues](https://github.com/verse-lab/colean/issues).
 
 ## Limitations
 

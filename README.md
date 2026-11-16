@@ -146,10 +146,10 @@ def NDet.flips : NDet Nat :=
   NDet.corec (S := Nat ⊕ Nat) (s := .inr 0) (fun
     | .inl n => .ret n
     | .inr n => .choose [.inl (n + 1), .inr (n + 1)]) 
-
--- One can nest through a predefined set of standard Lean types (`Prod`, `Sum`, `List`, `Option`,
--- etc.) and through types defined with `codatatype` and `datatype` (see below).
 ```
+
+One can nest through a predefined set of standard Lean types (`Prod`, `Sum`, `List`, `Option`,
+etc.) and through types defined with `codatatype` and `datatype` (see below).
 
 ### Inductive types
 

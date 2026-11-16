@@ -57,4 +57,5 @@ import ColeanTest.FrontEnd
 import ColeanTest.Modifiers
 import ColeanTest.CCPO
 import ColeanTest.RelSimp
+import ColeanTest.Regressions
 import ColeanTest.Readme

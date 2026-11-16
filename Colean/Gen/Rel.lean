@@ -189,14 +189,28 @@ def genRelOfC : TermElabM Unit := do
     rw [← $toC_ofC:ident z, ← $toC_ofC:ident z']
     generalize $ofC:ident z = a at h ⊢
     generalize $ofC:ident z' = a' at h ⊢
-    clear z z'
-    cases h))
+    clear z z'))
   let value ← prove type fun g => do
     let (_, g) ← g.introN (xs.size - 3)
-    let gs ← Tactic.run g (Tactic.evalTactic start)
-    unless gs.length == ctx.ctors.size do
-      throwError "internal error: unexpected cases of `{ctx.Rel}`"
-    for g in gs, c in ctx.ctors do
+    let [g] ← Tactic.run g (Tactic.evalTactic start)
+      | throwError "internal error: expected one goal"
+    let h ← g.withContext do
+      let some h ← (← getLCtx).findDeclRevM? fun d => do
+          let ty ← instantiateMVars d.type
+          return if ty.getAppFn.isConstOf ctx.Rel then some d.fvarId else none
+        | throwError "internal error: no hypothesis of `{ctx.Rel}`"
+      pure h
+    for sg in ← g.cases h do
+      let some c := ctx.ctors.find? (ctx.relCtor · == sg.ctorName)
+        | throwError "internal error: unexpected case {sg.ctorName}"
+      -- The premises of `T.F.Rel.c`, its last fields, named `h_x` by the fields of the case: the
+      -- substitution of the index variables reorders the hypotheses that depend on them, so their
+      -- positions in the context do not tell which is which.
+      let recs := c.recArgs
+      let hps := sg.fields.extract (sg.fields.size - recs.size) sg.fields.size
+      let g ← (recs.zip hps).foldlM (init := sg.mvarId) fun g (a, hp) => do
+        let .fvar hp := hp | throwError "internal error: a premise substituted"
+        g.rename hp (Name.mkSimple s!"h_{a.name}")
       -- `toC (F.c …)` unfolded to its layer, where a nested argument's layer `toC o x` occurs.
       let g ← g.withContext do
         let tgt ← instantiateMVars (← g.getType)
@@ -205,18 +219,15 @@ def genRelOfC : TermElabM Unit := do
           (args.extract 0 (args.size - 2) ++ #[← whnf args[args.size - 2]!, ← whnf args.back!]))
       -- The hypothesis on a nested pair gives its two layers, with one shape, and the relation
       -- on their contents.
-      let recs := c.recArgs
       let mut steps : Array (TSyntax `tactic) := #[]
-      if c.hasNest then
-        let hs := recs.map fun a => mkIdent (Name.mkSimple s!"h_{a.name}")
-        steps := steps.push (← `(tactic| rename_i $[$hs:ident]*))
-        for hId in hs, a in recs do
-          if a.kind.isNest then
-            let e := mkIdent (Name.mkSimple s!"e_{a.name}")
-            let e' := mkIdent (Name.mkSimple s!"e'_{a.name}")
-            steps := steps.push
-              (← `(tactic| obtain ⟨_, _, _, $e:ident, $e':ident, $hId:ident⟩ := $hId))
-            steps := steps.push (← `(tactic| rw [$e:ident, $e':ident]))
+      for a in recs do
+        if a.kind.isNest then
+          let hId := mkIdent (Name.mkSimple s!"h_{a.name}")
+          let e := mkIdent (Name.mkSimple s!"e_{a.name}")
+          let e' := mkIdent (Name.mkSimple s!"e'_{a.name}")
+          steps := steps.push
+            (← `(tactic| obtain ⟨_, _, _, $e:ident, $e':ident, $hId:ident⟩ := $hId))
+          steps := steps.push (← `(tactic| rw [$e:ident, $e':ident]))
       steps := steps.push (← `(tactic| refine ⟨_, _, _, rfl, rfl, fun b => ?_⟩))
       let [g] ← Tactic.run g (Tactic.evalTactic (← `(tactic| ($[$steps:tactic]*))))
         | throwError "internal error: expected one goal"
